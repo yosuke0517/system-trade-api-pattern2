@@ -7,6 +7,7 @@ import (
 	"app/domain/service"
 	"app/infrastructure/databases/candle"
 	"fmt"
+	"github.com/markcheno/go-talib"
 	"log"
 	"math"
 	"net/http"
@@ -245,6 +246,42 @@ SystemTrade:
 				}
 				// 注文が残っていたら準備しない
 				if len(orderRes) == 0 {
+					currentCandle := (*service.CandleInfraStruct)(candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute)))
+					if currentCandle == nil {
+						for i := 0; i < 10; i++ {
+							currentCandle = (*service.CandleInfraStruct)(candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute)))
+							fmt.Println("currentCandle")
+							fmt.Println(currentCandle)
+							time.Sleep(time.Second * 1)
+							if currentCandle != nil {
+								break
+							}
+						}
+					}
+					dfs100, _ := service.GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 100)
+					if len(dfs100.Closes()) == 100 {
+						value100 := talib.Sma(dfs100.Closes(), 100)
+						// 100分線と現在のキャンドルの乖離を求める
+						disparation := value100[99] / currentCandle.Open
+						neary := value100[99] / currentCandle.Open
+						fmt.Println("neary")
+						fmt.Println(neary)
+						if neary > 0.9985 && neary < 1.0015 {
+							fmt.Println("100分線と現在価格が近いため10分休みます")
+							goto SmallPause
+						}
+						fmt.Println("disparation")
+						fmt.Println(disparation)
+						// ロング・ショートそれぞれ乖離が大きかったらPauseする
+						if isUpper == 1 && disparation < 0.98 {
+							log.Println("ロング：乖離幅が大きいためPauseします")
+							goto SmallPause
+						}
+						if isUpper == 2 && disparation > 1.02 {
+							log.Println("ショート：乖離幅が大きいためPauseします")
+							goto SmallPause
+						}
+					}
 					params := map[string]string{
 						"product_code":      "FX_BTC_JPY",
 						"child_order_state": "ACTIVE",
