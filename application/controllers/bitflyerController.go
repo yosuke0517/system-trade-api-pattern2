@@ -7,7 +7,6 @@ import (
 	"app/domain/service"
 	"app/infrastructure/databases/candle"
 	"fmt"
-	"github.com/markcheno/go-talib"
 	"log"
 	"math"
 	"net/http"
@@ -82,7 +81,7 @@ func GetAllCandle() http.HandlerFunc {
 
 func SystemTradeBase() {
 	bitflyerClient := bitflyer.New(os.Getenv("API_KEY"), os.Getenv("API_SECRET"))
-	var isUpper int
+	var isUpper = 0
 	var closeOrderExecutionCheck = false
 	var count = 0
 	var smallPauseCount = 0
@@ -90,6 +89,7 @@ func SystemTradeBase() {
 	var trend int // 1:ロング, 2:ショート, 3:ローソク情報不足, 4:ロングsmall, 5:ショートsmall
 	var newTrend int
 	var isTrendChange = false
+	var profitRateBase = 0.0006
 	var profitRate float64
 	var targetBalance float64
 	var currentBalance float64
@@ -115,15 +115,16 @@ SystemTrade:
 					fmt.Println("targetBalance")
 					fmt.Println(targetBalance)
 					fmt.Println("現在残高が取れない")
-				} else {
-					//if currentCollateral.Collateral > targetBalance {
-					//	goto Pause
-					//}
 				}
-				if closeOrderExecutionCheck == true {
+				if closeOrderExecutionCheck == true && isUpper != 0 && isUpper != 3 {
+					if isUpper == 1 {
+						profitRate = 1 + profitRateBase
+					}
+					if isUpper == 2 {
+						profitRate = 1 - profitRate
+					}
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
-					//isTrendChange = false
 				}
 			}
 			if time.Now().Truncate(time.Second).Second() == 5 {
@@ -134,12 +135,14 @@ SystemTrade:
 					fmt.Println("targetBalance")
 					fmt.Println(targetBalance)
 					fmt.Println("現在残高が取れない")
-				} else {
-					//if currentCollateral.Collateral > targetBalance {
-					//	goto Pause
-					//}
 				}
-				if closeOrderExecutionCheck == true {
+				if closeOrderExecutionCheck == true && isUpper != 0 && isUpper != 3 {
+					if isUpper == 1 {
+						profitRate = 1 + profitRateBase
+					}
+					if isUpper == 2 {
+						profitRate = 1 - profitRate
+					}
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
 				}
@@ -217,8 +220,13 @@ SystemTrade:
 								}
 							}
 						}
-						// 損切り後様子を見る
-						goto Pause
+						// 損切りしたらisUpperを反転させる
+						if isUpper == 1 {
+							isUpper = 2
+						}
+						if isUpper == 2 {
+							isUpper = 1
+						}
 					}
 				}
 			}
@@ -237,93 +245,24 @@ SystemTrade:
 				}
 				// 注文が残っていたら準備しない
 				if len(orderRes) == 0 {
-					currentCandle := (*service.CandleInfraStruct)(candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute)))
-					if currentCandle == nil {
-						for i := 0; i < 10; i++ {
-							currentCandle = (*service.CandleInfraStruct)(candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute)))
-							fmt.Println("currentCandle")
-							fmt.Println(currentCandle)
-							time.Sleep(time.Second * 1)
-							if currentCandle != nil {
-								break
-							}
-						}
+					params := map[string]string{
+						"product_code":      "FX_BTC_JPY",
+						"child_order_state": "ACTIVE",
 					}
-					// 連続シグナル判定
-					prev1Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute))
-					prev2Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*1))
-					prev3Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*2))
-					prev4Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*3))
-
-					if prev1Candle != nil && prev2Candle != nil && prev3Candle != nil && prev4Candle != nil {
-						prev1UpperStatus := prev1Candle.Open < prev1Candle.Close
-						prev2UpperStatus := prev2Candle.Open < prev2Candle.Close
-						prev3UpperStatus := prev3Candle.Open < prev3Candle.Close
-						prev4UpperStatus := prev4Candle.Open < prev4Candle.Close
-						if prev1UpperStatus == true && prev2UpperStatus == true && prev3UpperStatus == true && prev4UpperStatus == true {
-							log.Println("同一のシグナルが連続で発生しているため取引を3分間中断します。")
-							goto SmallPause
-						} else if prev1UpperStatus == false && prev2UpperStatus == false && prev3UpperStatus == false && prev4UpperStatus == false {
-							log.Println("同一のシグナルが連続で発生しているため取引を3分間中断します。")
-							goto SmallPause
-						}
-					}
-
-					fmt.Println("currentCandle")
-					fmt.Println(currentCandle)
-					if currentCandle != nil {
-						cross := currentCandle.Open / currentCandle.Close
-						fmt.Println("cross")
-						fmt.Println(cross)
-						params := map[string]string{
-							"product_code":      "FX_BTC_JPY",
-							"child_order_state": "ACTIVE",
-						}
-						orderRes, _ := bitflyerClient.ListOrder(params)
-						// 既存のオーダーがない場合、十字線判定
-						if len(orderRes) == 0 {
-							dfs100, _ := service.GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 100)
-							fmt.Println("cross")
-							fmt.Println(cross)
-							//if (cross > 0.99994 && cross < 1.00006) || highToLow > 2000 {
-							if cross > 0.9999 && cross < 1.0001 {
-								log.Println("currentCandle")
-								log.Println(currentCandle)
-								log.Println("十字線または設定値を超える値幅を検知しました。取引を10分休みます。")
-								goto SmallPause
-							}
-							fmt.Println("isUpper")
-							fmt.Println(isUpper)
-							trend, profitRate, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
+					orderRes, _ := bitflyerClient.ListOrder(params)
+					// 既存のオーダーがない場合
+					if len(orderRes) == 0 {
+						fmt.Println("isUpper")
+						fmt.Println(isUpper)
+						// 初回のみisUpperを決める
+						if isUpper == 0 {
+							trend, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 							isUpper = trend
 							fmt.Println("isUpper")
 							fmt.Println(isUpper)
-							if len(dfs100.Closes()) == 100 {
-								value100 := talib.Sma(dfs100.Closes(), 100)
-								// 100分線と現在のキャンドルの乖離を求める
-								disparation := value100[99] / currentCandle.Open
-								neary := value100[99] / currentCandle.Open
-								fmt.Println("neary")
-								fmt.Println(neary)
-								if neary > 0.9985 && neary < 1.0015 {
-									fmt.Println("100分線と現在価格が近いため10分休みます")
-									goto SmallPause
-								}
-								fmt.Println("disparation")
-								fmt.Println(disparation)
-								// ロング・ショートそれぞれ乖離が大きかったらPauseする
-								if isUpper == 1 && disparation < 0.98 {
-									log.Println("ロング：乖離幅が大きいためPauseします")
-									goto SmallPause
-								}
-								if isUpper == 2 && disparation > 1.02 {
-									log.Println("ショート：乖離幅が大きいためPauseします")
-									goto SmallPause
-								}
-							}
-							if isUpper == 3 {
-								goto Pause
-							}
+						}
+						if isUpper == 3 {
+							goto Pause
 						}
 					}
 					closeOrderExecutionCheck = service.CloseOrderExecutionCheck()

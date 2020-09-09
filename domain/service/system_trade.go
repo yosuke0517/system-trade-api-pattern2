@@ -242,35 +242,11 @@ func SystemTradeService(isUpper int, profitRate float64) {
 	}
 }
 
-func IsUpperJudgment(prevCandle *CandleInfraStruct) int {
-	upperHige := prevCandle.High / prevCandle.Close
-	// 数値が大きいほどヒゲが大きい
-	if upperHige > 1.00017 && prevCandle.Open > prevCandle.Close {
-		log.Println("上ヒゲを検知しました。")
-		log.Println(prevCandle)
-		return 2
-	}
-
-	lowerHige := prevCandle.Low / prevCandle.Close
-	// 数値が小さいほどヒゲが長い
-	if lowerHige < 0.99983 && prevCandle.Open < prevCandle.Close {
-		log.Println("下ヒゲを検知しました。")
-		log.Println(prevCandle)
-		return 1
-	}
-	if prevCandle.Open < prevCandle.Close {
-		return 1
-	} else {
-		return 2
-	}
-}
-
 // 与えられたperiodに対するSMA値を返す // trend 0:ロング、1:ショート
 // return int:ロング or ショート(1:ロング、2:ショート）, float64:クローズオーダーの率（トレンドによって変える）, bool:前回とトレンドが変わったかどうか
 // 前回のトレンドを受け取りトレンドの変化を判定
 // 1: 完全ロング, 2: 完全ショート, 3: ローソクが足りないとき, 4: 準ロング（10分線が21分線より低いときかつ100分線が1番低いとき）, 5: 準ショート（10分線が21分線より高いときかつ100分線が1番高いとき）
-func SmaAnalysis(trend, newTrend int) (int, float64, bool) {
-	var profitRate = 0.0006
+func SmaAnalysis(trend, newTrend int) (int, bool) {
 	dfs10, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 11)
 	dfs21, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 21)
 	dfs100, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 100)
@@ -310,29 +286,29 @@ func SmaAnalysis(trend, newTrend int) (int, float64, bool) {
 			log.Println("トレンドの変更を検知しました。")
 			log.Println(newTrend)
 			if newTrend == 1 {
-				return newTrend, 1.0 + profitRate, true
+				return newTrend, true
 			}
 			if newTrend == 2 {
-				return newTrend, 1.0 - profitRate, true
+				return newTrend, true
 			}
 			if newTrend == 4 {
-				return newTrend, 1.0 + profitRate, true
+				return newTrend, true
 			}
 			if newTrend == 5 {
-				return newTrend, 1.0 - profitRate, true
+				return newTrend, true
 			}
 		} else {
 			if newTrend == 1 {
-				return newTrend, 1.0 + profitRate, false
+				return newTrend, false
 			}
 			if newTrend == 2 {
-				return newTrend, 1.0 - profitRate, false
+				return newTrend, false
 			}
 			if newTrend == 4 {
-				return newTrend, 1.0 + profitRate, true
+				return newTrend, true
 			}
 			if newTrend == 5 {
-				return newTrend, 1.0 - profitRate, true
+				return newTrend, true
 			}
 		}
 		// 2回目以降でトレンドの変更がなかった場合はisTrendChangeはfalse
@@ -341,13 +317,13 @@ func SmaAnalysis(trend, newTrend int) (int, float64, bool) {
 		//}
 	} else {
 		log.Println("キャンドル数がトレード必要数に達していません。3分間取引を中断して必要なキャンドル情報を収集します。")
-		return 3, 0, false
+		return 3, false
 	}
 	// 初回はisTrendChangeはfalseとする
 	//if trend == 0 {
 	//	return newTrend, 0, false
 	//}
-	return newTrend, 0, false
+	return newTrend, false
 }
 
 // トレンドのみ返す
