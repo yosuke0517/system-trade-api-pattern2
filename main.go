@@ -3,12 +3,10 @@ package main
 import (
 	"app/application/controllers"
 	"app/application/server"
-	"app/utils"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func init() {
@@ -27,7 +25,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 
-	utils.LoggingSettings(os.Getenv("LOG_FILE"))
+	// utils.LoggingSettings(os.Getenv("LOG_FILE"))
 
 	/**
 	リアルタイム controllerから
