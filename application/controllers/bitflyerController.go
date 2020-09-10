@@ -90,7 +90,7 @@ func SystemTradeBase() {
 	var trend int // 1:ロング, 2:ショート, 3:ローソク情報不足, 4:ロングsmall, 5:ショートsmall
 	var newTrend int
 	var isTrendChange = false
-	var profitRateBase = 0.0006
+	var profitRateBase = 0.0003
 	var profitRate float64
 	var targetBalance float64
 	var currentBalance float64
@@ -122,13 +122,16 @@ SystemTrade:
 						profitRate = 1 + profitRateBase
 					}
 					if isUpper == 2 {
-						profitRate = 1 - profitRate
+						profitRate = 1 - profitRateBase
 					}
+					fmt.Println("isUpper")
+					fmt.Println(isUpper)
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
 				}
 			}
-			if time.Now().Truncate(time.Second).Second() == 5 {
+			if time.Now().Truncate(time.Second).Second()%15 == 0 && time.Now().Truncate(time.Second).Second() != 55 && time.Now().Truncate(time.Second).Second() != 0 {
+				closeOrderExecutionCheck = service.CloseOrderExecutionCheck()
 				currentCollateral, err := bitflyerClient.GetCollateral()
 				if err != nil {
 					fmt.Println("currentCollateral.Collateral")
@@ -142,8 +145,9 @@ SystemTrade:
 						profitRate = 1 + profitRateBase
 					}
 					if isUpper == 2 {
-						profitRate = 1 - profitRate
+						profitRate = 1 - profitRateBase
 					}
+					fmt.Println("やりまーーーーーーーーす")
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
 				}
@@ -224,16 +228,19 @@ SystemTrade:
 						// 損切りしたらisUpperを反転させる
 						if isUpper == 1 {
 							isUpper = 2
-						}
-						if isUpper == 2 {
+						} else if isUpper == 2 {
+							isUpper = 1
+						} else {
 							isUpper = 1
 						}
+						fmt.Println("isUpperrrrrrrrr")
+						fmt.Println(isUpper)
 					}
 				}
 			}
 
 			// 注文準備
-			if time.Now().Truncate(time.Second).Second() == 59 {
+			if time.Now().Truncate(time.Second).Second() == 29 || time.Now().Truncate(time.Second).Second() == 59 {
 				params := map[string]string{
 					"product_code":      "FX_BTC_JPY",
 					"child_order_state": "ACTIVE",
@@ -256,6 +263,27 @@ SystemTrade:
 							if currentCandle != nil {
 								break
 							}
+						}
+					}
+					// 連続シグナル判定
+					prev1Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute))
+					prev2Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*1))
+					prev3Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*2))
+					prev4Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*3))
+					prev5Candle := candle.SelectOne(os.Getenv("PRODUCT_CODE"), time.Minute, time.Now().Truncate(time.Minute).Add(-time.Minute*4))
+
+					if prev1Candle != nil && prev2Candle != nil && prev3Candle != nil && prev4Candle != nil && prev5Candle != nil {
+						prev1UpperStatus := prev1Candle.Open < prev1Candle.Close
+						prev2UpperStatus := prev2Candle.Open < prev2Candle.Close
+						prev3UpperStatus := prev3Candle.Open < prev3Candle.Close
+						prev4UpperStatus := prev4Candle.Open < prev4Candle.Close
+						prev5UpperStatus := prev5Candle.Open < prev5Candle.Close
+						if prev1UpperStatus == true && prev2UpperStatus == true && prev3UpperStatus == true && prev4UpperStatus == true && prev5UpperStatus == true {
+							log.Println("同一のシグナルが連続で発生しているため取引を3分間中断します。")
+							goto SmallPause
+						} else if prev1UpperStatus == false && prev2UpperStatus == false && prev3UpperStatus == false && prev4UpperStatus == false && prev5UpperStatus == false {
+							log.Println("同一のシグナルが連続で発生しているため取引を3分間中断します。")
+							goto SmallPause
 						}
 					}
 					dfs100, _ := service.GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 100)
@@ -295,7 +323,7 @@ SystemTrade:
 						if isUpper == 0 {
 							trend, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 							isUpper = trend
-							fmt.Println("isUpper")
+							fmt.Println("isUpperyyyyyyyyyyyyy")
 							fmt.Println(isUpper)
 						}
 						if isUpper == 3 {
@@ -352,7 +380,7 @@ Mente:
 		for range time.Tick(1 * time.Second) {
 			menteCount++
 			fmt.Println(menteCount)
-			if menteCount == 8600 {
+			if menteCount == 2000 {
 				currentCollateral, err := bitflyerClient.GetCollateral()
 				if err != nil {
 					log.Println("現在の残高が取得できませんでした。")

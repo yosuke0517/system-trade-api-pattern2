@@ -97,6 +97,10 @@ func SystemTradeService(isUpper int, profitRate float64) {
 				}
 			}
 			if len(orderRes) == 0 {
+				fmt.Println("openRes")
+				fmt.Println(openRes)
+				fmt.Println("orderRes")
+				fmt.Println(orderRes)
 				log.Fatal("オープン注文が約定しませんでした。アプリケーションを終了します。")
 			}
 			// クローズ注文
@@ -250,7 +254,6 @@ func SmaAnalysis(trend, newTrend int) (int, bool) {
 	dfs10, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 11)
 	dfs21, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 21)
 	dfs100, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 100)
-	// dfs45, _ := GetAllCandle(os.Getenv("PRODUCT_CODE"), config.Config.Durations["1m"], 45)
 	fmt.Println("len(dfs100.Closes())")
 	fmt.Println(len(dfs100.Closes()))
 	if len(dfs100.Closes()) == 100 {
