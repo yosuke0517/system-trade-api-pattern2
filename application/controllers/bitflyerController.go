@@ -122,10 +122,10 @@ SystemTrade:
 					fmt.Println("現在残高が取れない")
 				}
 				if closeOrderExecutionCheck == true && isUpper != 0 && isUpper != 3 {
-					if isUpper == 1 {
+					if isUpper == 1 || isUpper == 4 {
 						profitRate = 1 + profitRateBase
 					}
-					if isUpper == 2 {
+					if isUpper == 2 || isUpper == 5 {
 						profitRate = 1 - profitRateBase
 					}
 					fmt.Println("やりますーーーーーーーー")
@@ -149,10 +149,10 @@ SystemTrade:
 					fmt.Println("現在残高が取れない")
 				}
 				if closeOrderExecutionCheck == true && isUpper != 0 && isUpper != 3 {
-					if isUpper == 1 {
+					if isUpper == 1 || isUpper == 4 {
 						profitRate = 1 + profitRateBase
 					}
-					if isUpper == 2 {
+					if isUpper == 2 || isUpper == 5 {
 						profitRate = 1 - profitRateBase
 					}
 					fmt.Println("やりますーーーーーーーー")
