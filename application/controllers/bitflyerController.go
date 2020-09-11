@@ -128,6 +128,7 @@ SystemTrade:
 					if isUpper == 2 {
 						profitRate = 1 - profitRateBase
 					}
+					fmt.Println("やりますーーーーーーーー")
 					fmt.Println("isUpper")
 					fmt.Println(isUpper)
 					go service.SystemTradeService(isUpper, profitRate)
@@ -154,6 +155,9 @@ SystemTrade:
 					if isUpper == 2 {
 						profitRate = 1 - profitRateBase
 					}
+					fmt.Println("やりますーーーーーーーー")
+					fmt.Println("isUpper")
+					fmt.Println(isUpper)
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
 				}
