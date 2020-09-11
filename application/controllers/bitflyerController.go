@@ -90,7 +90,7 @@ func SystemTradeBase() {
 	var trend int // 1:ロング, 2:ショート, 3:ローソク情報不足, 4:ロングsmall, 5:ショートsmall
 	var newTrend int
 	var isTrendChange = false
-	var profitRateBase = 0.0003
+	var profitRateBase = 0.0002
 	var profitRate float64
 	var targetBalance float64
 	var currentBalance float64
@@ -189,7 +189,7 @@ SystemTrade:
 					log.Println("execLossCut")
 					log.Println(execLossCut)
 					// TODO 損切りの条件（仮）注文してから60分経過 or 注文時の価格と現在価格が2000円以上差がある時 ||中止中
-					if orderTime.Add(time.Minute*30).Before(time.Now()) == true || math.Abs(limitPrice) > 4000 {
+					if orderTime.Add(time.Minute*30).Before(time.Now()) == true || math.Abs(limitPrice) > 2000 {
 						fmt.Println("損切りの条件に達したため注文をキャンセルし、成行でクローズします。")
 						cancelOrder := &bitflyer.CancelOrder{
 							ProductCode:            "FX_BTC_JPY",
