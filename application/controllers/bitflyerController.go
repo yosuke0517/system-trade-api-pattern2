@@ -224,16 +224,8 @@ SystemTrade:
 								}
 							}
 						}
-						// 損切りしたらisUpperを反転させる
-						if isUpper == 1 {
-							isUpper = 2
-						} else if isUpper == 2 {
-							isUpper = 1
-						} else {
-							isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
-						}
-						fmt.Println("isUpperrrrrrrrr")
-						fmt.Println(isUpper)
+						// 損切りしたらPause
+						goto Pause
 					}
 				}
 			}
@@ -353,9 +345,10 @@ Pause:
 		for range time.Tick(1 * time.Second) {
 			count++
 			fmt.Println(count)
-			if count == 600 {
+			if count == 900 {
 				log.Println("Pause：システムトレードを再開します。")
 				count = 0
+				isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 				goto SystemTrade
 			}
 		}
@@ -379,7 +372,7 @@ Mente:
 		for range time.Tick(1 * time.Second) {
 			menteCount++
 			fmt.Println(menteCount)
-			if menteCount == 2000 {
+			if menteCount == 8600 {
 				currentCollateral, err := bitflyerClient.GetCollateral()
 				if err != nil {
 					log.Println("現在の残高が取得できませんでした。")
