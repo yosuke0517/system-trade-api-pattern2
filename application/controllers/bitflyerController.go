@@ -131,7 +131,7 @@ SystemTrade:
 					closeOrderExecutionCheck = false
 				}
 			}
-			if time.Now().Truncate(time.Second).Second()%12 == 0 && time.Now().Truncate(time.Second).Second() != 60 && time.Now().Truncate(time.Second).Second() != 0 {
+			if time.Now().Truncate(time.Second).Second()%8 == 0 && time.Now().Truncate(time.Second).Second() != 56 {
 				closeOrderExecutionCheck = service.CloseOrderExecutionCheck()
 				isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 				currentCollateral, err := bitflyerClient.GetCollateral()
