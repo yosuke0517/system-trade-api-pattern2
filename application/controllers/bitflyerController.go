@@ -229,12 +229,13 @@ SystemTrade:
 						// 損切りしたらPause
 						//goto Pause
 						// 損切りしたらisUpperを反転させる
-						if isUpper == 1 {
-							isUpper = 2
-						} else if isUpper == 2 {
+						nowTrend, _ := service.SmaAnalysis(isUpper, newTrend)
+						if isUpper == 2 && nowTrend == 1 {
 							isUpper = 1
-						} else {
-							isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
+						} else if isUpper == 1 && nowTrend == 2 {
+							isUpper = 2
+						} else if (isUpper == 2 && nowTrend == 2) || (isUpper == 1 && nowTrend == 1) {
+							goto SmallPause
 						}
 						fmt.Println("isUpperrrrrrrrr")
 						fmt.Println(isUpper)
