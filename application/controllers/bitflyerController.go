@@ -110,6 +110,7 @@ SystemTrade:
 			// 0秒台で分析・システムトレードを走らせる
 			if time.Now().Truncate(time.Second).Second() == 0 {
 				currentCollateral, err := bitflyerClient.GetCollateral()
+				isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 				if err != nil {
 					fmt.Println("currentCollateral.Collateral")
 					fmt.Println(currentCollateral)
@@ -132,6 +133,7 @@ SystemTrade:
 			}
 			if time.Now().Truncate(time.Second).Second()%12 == 0 && time.Now().Truncate(time.Second).Second() != 60 && time.Now().Truncate(time.Second).Second() != 0 {
 				closeOrderExecutionCheck = service.CloseOrderExecutionCheck()
+				isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 				currentCollateral, err := bitflyerClient.GetCollateral()
 				if err != nil {
 					fmt.Println("currentCollateral.Collateral")
