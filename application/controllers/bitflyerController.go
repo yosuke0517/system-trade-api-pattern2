@@ -227,7 +227,17 @@ SystemTrade:
 							}
 						}
 						// 損切りしたらPause
-						goto Pause
+						//goto Pause
+						// 損切りしたらisUpperを反転させる
+						if isUpper == 1 {
+							isUpper = 2
+						} else if isUpper == 2 {
+							isUpper = 1
+						} else {
+							isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
+						}
+						fmt.Println("isUpperrrrrrrrr")
+						fmt.Println(isUpper)
 					}
 				}
 			}
