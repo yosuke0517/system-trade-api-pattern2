@@ -90,7 +90,7 @@ func SystemTradeBase() {
 	var trend int // 1:ロング, 2:ショート, 3:ローソク情報不足, 4:ロングsmall, 5:ショートsmall
 	var newTrend int
 	var isTrendChange = false
-	var profitRateBase = 0.0002
+	var profitRateBase = 0.000075
 	var profitRate float64
 	var targetBalance float64
 	var currentBalance float64
@@ -110,10 +110,6 @@ SystemTrade:
 			// 0秒台で分析・システムトレードを走らせる
 			if time.Now().Truncate(time.Second).Second() == 0 {
 				currentCollateral, err := bitflyerClient.GetCollateral()
-				// isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
-				if isUpper == 0 {
-					isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
-				}
 				if err != nil {
 					fmt.Println("currentCollateral.Collateral")
 					fmt.Println(currentCollateral)
@@ -128,18 +124,14 @@ SystemTrade:
 					if isUpper == 2 || isUpper == 5 {
 						profitRate = 1 - profitRateBase
 					}
-					fmt.Println("やりますーーーーーーーー")
 					fmt.Println("isUpper")
 					fmt.Println(isUpper)
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
 				}
 			}
-			if time.Now().Truncate(time.Second).Second()%10 == 0 && time.Now().Truncate(time.Second).Second() != 0 && time.Now().Truncate(time.Second).Second() != 60 {
+			if time.Now().Truncate(time.Second).Second()%15 == 0 && time.Now().Truncate(time.Second).Second() != 60 && time.Now().Truncate(time.Second).Second() != 0 {
 				closeOrderExecutionCheck = service.CloseOrderExecutionCheck()
-				if isUpper == 0 {
-					isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
-				}
 				currentCollateral, err := bitflyerClient.GetCollateral()
 				if err != nil {
 					fmt.Println("currentCollateral.Collateral")
@@ -155,9 +147,6 @@ SystemTrade:
 					if isUpper == 2 || isUpper == 5 {
 						profitRate = 1 - profitRateBase
 					}
-					fmt.Println("やりますーーーーーーーー")
-					fmt.Println("isUpper")
-					fmt.Println(isUpper)
 					go service.SystemTradeService(isUpper, profitRate)
 					closeOrderExecutionCheck = false
 				}
@@ -198,7 +187,7 @@ SystemTrade:
 					log.Println("execLossCut")
 					log.Println(execLossCut)
 					// TODO 損切りの条件（仮）注文してから60分経過 or 注文時の価格と現在価格が2000円以上差がある時 ||中止中
-					if orderTime.Add(time.Minute*30).Before(time.Now()) == true || math.Abs(limitPrice) > 2000 {
+					if orderTime.Add(time.Minute*30).Before(time.Now()) == true || math.Abs(limitPrice) > 4000 {
 						fmt.Println("損切りの条件に達したため注文をキャンセルし、成行でクローズします。")
 						cancelOrder := &bitflyer.CancelOrder{
 							ProductCode:            "FX_BTC_JPY",
@@ -235,17 +224,6 @@ SystemTrade:
 								}
 							}
 						}
-						// 損切りしたらPause
-						//goto Pause
-						// 損切りしたらisUpperを反転させる
-						//nowTrend, _ := service.SmaAnalysis(isUpper, newTrend)
-						//if isUpper == 2 && nowTrend == 1 {
-						//	isUpper = 1
-						//} else if isUpper == 1 && nowTrend == 2 {
-						//	isUpper = 2
-						//} else if (isUpper == 2 && nowTrend == 2) || (isUpper == 1 && nowTrend == 1) {
-						//	goto SmallPause
-						//}
 						// 損切りしたらisUpperを反転させる
 						if isUpper == 1 {
 							isUpper = 2
@@ -375,10 +353,9 @@ Pause:
 		for range time.Tick(1 * time.Second) {
 			count++
 			fmt.Println(count)
-			if count == 900 {
+			if count == 600 {
 				log.Println("Pause：システムトレードを再開します。")
 				count = 0
-				isUpper, isTrendChange = service.SmaAnalysis(isUpper, newTrend)
 				goto SystemTrade
 			}
 		}

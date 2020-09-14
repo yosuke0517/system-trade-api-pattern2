@@ -65,9 +65,6 @@ func SystemTradeService(isUpper int, profitRate float64) {
 				}
 			}
 		}
-		if openRes == nil {
-			log.Fatal("オープンの注文が約定できませんでした。アプリケーションを終了します。")
-		}
 		if openRes.ChildOrderAcceptanceID == "" {
 			log.Fatal("オープンの注文が約定できませんでした。アプリケーションを終了します。")
 		} else {
@@ -101,7 +98,7 @@ func SystemTradeService(isUpper int, profitRate float64) {
 				fmt.Println(openRes)
 				fmt.Println("orderRes")
 				fmt.Println(orderRes)
-				log.Fatal("オープン注文が約定しませんでした。アプリケーションを終了します。")
+				log.Fatal("オープン注文の一覧が取得できませんでした。クローズ注文ができないためアプリケーションを終了します。")
 			}
 			// クローズ注文
 			// TODO 利益は要相談
